@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"gofr.dev/pkg/gofr/config"
 	"gofr.dev/pkg/gofr/container"
 	gofrHTTP "gofr.dev/pkg/gofr/http"
 	"gofr.dev/pkg/gofr/http/middleware"
@@ -29,13 +30,13 @@ var (
 	errInvalidKeyFile         = errors.New("invalid key file")
 )
 
-func newHTTPServer(c *container.Container, port int, middlewareConfigs map[string]string) *httpServer {
+func newHTTPServer(c *container.Container, port int, middlewareConfigs map[string]string, cfg config.Config) *httpServer {
 	r := gofrHTTP.NewRouter()
 	wsManager := websocket.New()
 
 	r.Use(
 		middleware.Tracer,
-		middleware.Logging(c.Logger),
+		middleware.Logging(c.Logger, cfg),
 		middleware.CORS(middlewareConfigs, r.RegisteredRoutes),
 		middleware.Metrics(c.Metrics()),
 	)
