@@ -10,7 +10,7 @@ const (
 )
 
 // CORS is a middleware that adds CORS (Cross-Origin Resource Sharing) headers to the response.
-func CORS(middlewareConfigs map[string]string, routes *[]string) func(inner http.Handler) http.Handler {
+func CORS(middlewareConfigs MiddlewareConfig, routes *[]string) func(inner http.Handler) http.Handler {
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			setMiddlewareHeaders(middlewareConfigs, *routes, w)
@@ -25,7 +25,7 @@ func CORS(middlewareConfigs map[string]string, routes *[]string) func(inner http
 	}
 }
 
-func setMiddlewareHeaders(middlewareConfigs map[string]string, routes []string, w http.ResponseWriter) {
+func setMiddlewareHeaders(middlewareConfigs MiddlewareConfig, routes []string, w http.ResponseWriter) {
 	routes = append(routes, "OPTIONS")
 
 	// Set default headers
@@ -37,7 +37,7 @@ func setMiddlewareHeaders(middlewareConfigs map[string]string, routes []string, 
 
 	// Add custom headers to the default headers
 	for header, defaultValue := range defaultHeaders {
-		if customValue, ok := middlewareConfigs[header]; ok && customValue != "" {
+		if customValue, ok := middlewareConfigs.CorsHeaders[header]; ok && customValue != "" {
 			if header == "Access-Control-Allow-Headers" {
 				w.Header().Set(header, defaultValue+", "+customValue)
 			} else {
@@ -49,7 +49,7 @@ func setMiddlewareHeaders(middlewareConfigs map[string]string, routes []string, 
 	}
 
 	// Handle additional custom headers (not part of defaultHeaders)
-	for header, customValue := range middlewareConfigs {
+	for header, customValue := range middlewareConfigs.CorsHeaders {
 		if _, ok := defaultHeaders[header]; !ok {
 			w.Header().Set(header, customValue)
 		}

@@ -3,41 +3,18 @@ package middleware
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gofr.dev/pkg/gofr/config"
 	"gofr.dev/pkg/gofr/logging"
 	"gofr.dev/pkg/gofr/testutil"
 )
-
-func createEnvFile(t *testing.T, dir, fileName string, envData map[string]string) {
-	t.Helper()
-
-	// Create or open the env file for writing
-	envFile, err := os.Create(dir + "/" + fileName)
-	if err != nil {
-		t.Fatalf("error creating %s file: %v", fileName, err)
-	}
-
-	defer envFile.Close()
-
-	// Write data to the env file
-	for key, value := range envData {
-		_, err := fmt.Fprintf(envFile, "%s=%s\n", key, value)
-		if err != nil {
-			t.Fatalf("unable to write to file: %v", err)
-		}
-	}
-}
 
 func Test_getIPAddress(t *testing.T) {
 	{
@@ -71,18 +48,11 @@ func Test_LoggingMiddleware(t *testing.T) {
 	logs := testutil.StdoutOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -94,18 +64,11 @@ func Test_LoggingMiddlewareError(t *testing.T) {
 	logs := testutil.StderrOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.ERROR)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testHandlerError))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandlerError))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -117,19 +80,13 @@ func Test_LoggingMiddlewareProbeDisable(t *testing.T) {
 	logs := testutil.StdoutOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy/.well-known/health", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL":       "localhost:5432",
-			"LOG_DISABLE_PROBES": "true",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env.disable", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{
+			LogDisableProbes: "true",
+		}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -141,19 +98,11 @@ func Test_LoggingMiddlewareProbeEnable(t *testing.T) {
 	logs := testutil.StdoutOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy/.well-known/health", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-			// "LOG_DISABLE_PROBES": "false", // default value is false
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env.enable", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -177,18 +126,11 @@ func Test_LoggingMiddlewareStringPanicHandling(t *testing.T) {
 	logs := testutil.StderrOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testStringPanicHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testStringPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -205,18 +147,11 @@ func Test_LoggingMiddlewareErrorPanicHandling(t *testing.T) {
 	logs := testutil.StderrOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testErrorPanicHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testErrorPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -233,18 +168,11 @@ func Test_LoggingMiddlewareUnknownPanicHandling(t *testing.T) {
 	logs := testutil.StderrOutputForFunc(func() {
 		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy", http.NoBody)
 
-		envData := map[string]string{
-			"DATABASE_URL": "localhost:5432",
-		}
-
-		dir := t.TempDir()
-		createEnvFile(t, dir, ".env", envData)
-
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		cfg := config.NewEnvFile(dir, logging.NewMockLogger(logging.ERROR))
+		middlewareConfigs := MiddlewareConfig{}
 
-		handler := Logging(logger, cfg)(http.HandlerFunc(testUnknownPanicHandler))
+		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testUnknownPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})

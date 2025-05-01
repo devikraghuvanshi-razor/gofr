@@ -33,8 +33,10 @@ func Test_CORS(t *testing.T) {
 		{http.MethodOptions, &[]string{"PUT,DELETE,GET,POST"}, "", http.StatusOK, 3},
 	}
 
+	middlewareConfigs := MiddlewareConfig{}
+
 	for i, tc := range tests {
-		handler := CORS(nil, tc.registeredRoutes)(&MockHandlerForCORS{statusCode: http.StatusFound, response: "Sample Response"})
+		handler := CORS(middlewareConfigs, tc.registeredRoutes)(&MockHandlerForCORS{statusCode: http.StatusFound, response: "Sample Response"})
 
 		req := httptest.NewRequest(tc.method, "/hello", http.NoBody)
 		w := httptest.NewRecorder()
@@ -91,7 +93,10 @@ func TestSetMiddlewareHeaders(t *testing.T) {
 	for _, tc := range testCases {
 		w := httptest.NewRecorder()
 
-		setMiddlewareHeaders(tc.environmentConfig, tc.registeredRoutes, w)
+		middlewareConfigs := MiddlewareConfig{
+			CorsHeaders: tc.environmentConfig,
+		}
+		setMiddlewareHeaders(middlewareConfigs, tc.registeredRoutes, w)
 
 		// Check if the actual headers match the expected headers
 		for header, expectedValue := range tc.expectedHeaders {

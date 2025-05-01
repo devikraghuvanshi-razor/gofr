@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
-	"gofr.dev/pkg/gofr/config"
 )
 
 var errHijackNotSupported = errors.New("response writer does not support hijacking")
@@ -91,11 +90,11 @@ type logger interface {
 }
 
 // Logging is a middleware which logs response status and time in milliseconds along with other data.
-func Logging(logger logger, cfg config.Config) func(inner http.Handler) http.Handler {
+func Logging(middlewareConfigs MiddlewareConfig, logger logger) func(inner http.Handler) http.Handler {
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// disable logging for health check endpoints
-			if cfg.GetOrDefault("LOG_DISABLE_PROBES", "false") == "true" {
+			if middlewareConfigs.LogDisableProbes == "true" {
 				if r.URL.Path == "/.well-known/health" || r.URL.Path == "/.well-known/alive" {
 					inner.ServeHTTP(w, r)
 					return
