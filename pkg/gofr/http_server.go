@@ -35,10 +35,15 @@ func newHTTPServer(c *container.Container, port int, middlewareConfigs middlewar
 
 	r.Use(
 		middleware.Tracer,
-		middleware.Logging(middlewareConfigs, c.Logger),
-		middleware.CORS(middlewareConfigs, r.RegisteredRoutes),
+		middleware.CORS(middlewareConfigs.CorsHeaders, r.RegisteredRoutes),
 		middleware.Metrics(c.Metrics()),
 	)
+
+	if middlewareConfigs.LogDisableProbes == "true" {
+		r.Use(middleware.LoggingWithoutProbes(c.Logger))
+	} else {
+		r.Use(middleware.Logging(c.Logger))
+	}
 
 	return &httpServer{
 		router: r,

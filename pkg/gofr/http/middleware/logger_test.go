@@ -50,9 +50,7 @@ func Test_LoggingMiddleware(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
+		handler := Logging(logger)(http.HandlerFunc(testHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -66,9 +64,7 @@ func Test_LoggingMiddlewareError(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.ERROR)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandlerError))
+		handler := Logging(logger)(http.HandlerFunc(testHandlerError))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -82,32 +78,12 @@ func Test_LoggingMiddlewareProbeDisable(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{
-			LogDisableProbes: "true",
-		}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
+		handler := LoggingWithoutProbes(logger)(http.HandlerFunc(testHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
 
 	assert.Contains(t, logs, "")
-}
-
-func Test_LoggingMiddlewareProbeEnable(t *testing.T) {
-	logs := testutil.StdoutOutputForFunc(func() {
-		req, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://dummy/.well-known/health", http.NoBody)
-
-		rr := httptest.NewRecorder()
-		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testHandler))
-
-		handler.ServeHTTP(rr, req)
-	})
-
-	assert.Contains(t, logs, "GET    200")
 }
 
 // Test handler that uses the middleware.
@@ -128,9 +104,7 @@ func Test_LoggingMiddlewareStringPanicHandling(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testStringPanicHandler))
+		handler := Logging(logger)(http.HandlerFunc(testStringPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -149,9 +123,7 @@ func Test_LoggingMiddlewareErrorPanicHandling(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testErrorPanicHandler))
+		handler := Logging(logger)(http.HandlerFunc(testErrorPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})
@@ -170,9 +142,7 @@ func Test_LoggingMiddlewareUnknownPanicHandling(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		logger := logging.NewMockLogger(logging.DEBUG)
-		middlewareConfigs := MiddlewareConfig{}
-
-		handler := Logging(middlewareConfigs, logger)(http.HandlerFunc(testUnknownPanicHandler))
+		handler := Logging(logger)(http.HandlerFunc(testUnknownPanicHandler))
 
 		handler.ServeHTTP(rr, req)
 	})

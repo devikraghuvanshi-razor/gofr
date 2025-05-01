@@ -90,15 +90,26 @@ type logger interface {
 }
 
 // Logging is a middleware which logs response status and time in milliseconds along with other data.
-func Logging(middlewareConfigs MiddlewareConfig, logger logger) func(inner http.Handler) http.Handler {
+func Logging(logger logger) func(inner http.Handler) http.Handler {
+	return loggingMiddleware(logger, func(r *http.Request) bool {
+		return true // Log all requests
+	})
+}
+
+// LoggingWithoutProbes is a middleware which skips logging for health check endpoints.
+func LoggingWithoutProbes(logger logger) func(inner http.Handler) http.Handler {
+	return loggingMiddleware(logger, func(r *http.Request) bool {
+		// Skip logging for health check endpoints
+		return r.URL.Path != "/.well-known/health" && r.URL.Path != "/.well-known/alive"
+	})
+}
+
+func loggingMiddleware(logger logger, shouldLog func(*http.Request) bool) func(inner http.Handler) http.Handler {
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// disable logging for health check endpoints
-			if middlewareConfigs.LogDisableProbes == "true" {
-				if r.URL.Path == "/.well-known/health" || r.URL.Path == "/.well-known/alive" {
-					inner.ServeHTTP(w, r)
-					return
-				}
+			if !shouldLog(r) {
+				inner.ServeHTTP(w, r)
+				return
 			}
 
 			start := time.Now()
