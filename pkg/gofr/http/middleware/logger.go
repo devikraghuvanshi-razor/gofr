@@ -104,6 +104,7 @@ func LoggingWithoutProbes(logger logger) func(inner http.Handler) http.Handler {
 	})
 }
 
+// loggingMiddleware is a middleware that logs HTTP requests and responses.
 func loggingMiddleware(logger logger, shouldLog func(*http.Request) bool) func(inner http.Handler) http.Handler {
 	return func(inner http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package middleware
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +55,7 @@ func Test_LoggingMiddleware(t *testing.T) {
 
 		handler.ServeHTTP(rr, req)
 	})
-
+	fmt.Println(logs)
 	assert.Contains(t, logs, "GET    200")
 }
 
@@ -83,7 +84,7 @@ func Test_LoggingMiddlewareProbeDisable(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 	})
 
-	assert.Contains(t, logs, "")
+	assert.Empty(t, logs, "TEST Failed.\n")
 }
 
 // Test handler that uses the middleware.

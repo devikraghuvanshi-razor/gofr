@@ -40,7 +40,7 @@ func newHTTPServer(c *container.Container, port int, middlewareConfigs middlewar
 	)
 
 	if middlewareConfigs.LogDisableProbes == "true" {
-		r.Use(middleware.LoggingWithoutProbes(c.Logger))
+		// r.Use(middleware.LoggingWithoutProbes(c.Logger))
 	} else {
 		r.Use(middleware.Logging(c.Logger))
 	}
